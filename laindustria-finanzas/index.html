@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -148,6 +147,11 @@
       <div class="sec-head"><h2>📊 Dashboard</h2>
         <div class="head-btns"><button class="btn btn-sm btn-out" onclick="exportDashboard()">⬇ Reporte General</button></div>
       </div>
+      <div class="filters" style="align-items:center">
+        <div class="fg" style="margin:0;flex:1;min-width:130px"><label style="margin-bottom:3px">Desde</label><input type="date" id="dashDesde" onchange="renderDash()" style="padding:8px 10px;font-size:12px"></div>
+        <div class="fg" style="margin:0;flex:1;min-width:130px"><label style="margin-bottom:3px">Hasta</label><input type="date" id="dashHasta" onchange="renderDash()" style="padding:8px 10px;font-size:12px"></div>
+        <button class="btn btn-sm btn-out" onclick="clearDashDates()" style="margin-top:16px">Limpiar</button>
+      </div>
       <div class="stats" id="dashStats"></div>
       <div class="chart-grid">
         <div class="chart-box"><h3>Ventas vs Gastos (Últimos 6 meses)</h3><canvas id="chartVG"></canvas></div>
@@ -213,6 +217,7 @@
 <!-- ═══════ MODALS ═══════ -->
 <div class="mo" id="moVenta"><div class="mo-box">
   <h3 id="moVentaT">Registrar Venta</h3><input type="hidden" id="vId">
+  <div class="fg"><label>Fecha</label><input type="date" id="vFecha"></div>
   <div class="fg"><label>Concepto</label><input type="text" id="vConc" placeholder="Hamburguesa combo x2"></div>
   <div class="fg"><label>Monto (COP)</label><input type="number" id="vMon" placeholder="25000"></div>
   <div class="fg"><label>Canal</label><select id="vCan"><option value="sitio">En sitio</option><option value="domicilio">Domicilio</option></select></div>
@@ -222,6 +227,7 @@
 
 <div class="mo" id="moGasto"><div class="mo-box">
   <h3 id="moGastoT">Registrar Gasto</h3><input type="hidden" id="gId">
+  <div class="fg"><label>Fecha</label><input type="date" id="gFecha"></div>
   <div class="fg"><label>Concepto</label><input type="text" id="gConc" placeholder="Pago arriendo local"></div>
   <div class="fg"><label>Monto (COP)</label><input type="number" id="gMon" placeholder="1500000"></div>
   <div class="fg"><label>Categoría</label><select id="gCat">
@@ -338,14 +344,15 @@ function renderVentas(){
 }
 window.fVentas = (f,el) => { filtroV=f; document.querySelectorAll('#ventasFilters .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); renderVentas(); };
 window.saveVenta = async () => {
-  const id=$('vId').value, c=$('vConc').value.trim(), m=$('vMon').value, can=$('vCan').value, met=$('vMet').value;
+  const id=$('vId').value, c=$('vConc').value.trim(), m=$('vMon').value, can=$('vCan').value, met=$('vMet').value, fe=$('vFecha').value;
   if(!c||!m) return alert('Completa concepto y monto');
+  const fechaTs = fe ? Timestamp.fromDate(new Date(fe+'T12:00:00')) : Timestamp.now();
   const data = {concepto:c,monto:Number(m),canal:can,metodo:met};
-  if(id) await updateDoc(doc(db,'ventas',id),data);
-  else { data.fecha=Timestamp.now(); data.uid=auth.currentUser.uid; await addDoc(collection(db,'ventas'),data); }
+  if(id){ data.fecha=fechaTs; await updateDoc(doc(db,'ventas',id),data); }
+  else { data.fecha=fechaTs; data.uid=auth.currentUser.uid; await addDoc(collection(db,'ventas'),data); }
   closeMo('moVenta');
 };
-window.editV = id => { const v=ventas.find(x=>x.id===id); if(!v)return; $('vId').value=id; $('vConc').value=v.concepto||''; $('vMon').value=v.monto||''; $('vCan').value=v.canal||'sitio'; $('vMet').value=v.metodo||'Efectivo'; $('moVentaT').textContent='Editar Venta'; $('moVenta').classList.add('show'); };
+window.editV = id => { const v=ventas.find(x=>x.id===id); if(!v)return; $('vId').value=id; $('vConc').value=v.concepto||''; $('vMon').value=v.monto||''; $('vCan').value=v.canal||'sitio'; $('vMet').value=v.metodo||'Efectivo'; const fd=v.fecha?.toDate?.(); $('vFecha').value=fd?fd.toISOString().slice(0,10):''; $('moVentaT').textContent='Editar Venta'; $('moVenta').classList.add('show'); };
 window.delV = async id => { if(confirm('¿Eliminar venta?')) await deleteDoc(doc(db,'ventas',id)); };
 
 // ══════════ GASTOS ══════════
@@ -370,14 +377,15 @@ function renderGastos(){
 }
 window.fGastos = (f,el) => { filtroG=f; document.querySelectorAll('#gastosFilters .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); renderGastos(); };
 window.saveGasto = async () => {
-  const id=$('gId').value, c=$('gConc').value.trim(), m=$('gMon').value, cat=$('gCat').value;
+  const id=$('gId').value, c=$('gConc').value.trim(), m=$('gMon').value, cat=$('gCat').value, fe=$('gFecha').value;
   if(!c||!m) return alert('Completa concepto y monto');
+  const fechaTs = fe ? Timestamp.fromDate(new Date(fe+'T12:00:00')) : Timestamp.now();
   const data = {concepto:c,monto:Number(m),categoria:cat};
-  if(id) await updateDoc(doc(db,'gastos',id),data);
-  else { data.fecha=Timestamp.now(); data.uid=auth.currentUser.uid; await addDoc(collection(db,'gastos'),data); }
+  if(id){ data.fecha=fechaTs; await updateDoc(doc(db,'gastos',id),data); }
+  else { data.fecha=fechaTs; data.uid=auth.currentUser.uid; await addDoc(collection(db,'gastos'),data); }
   closeMo('moGasto');
 };
-window.editG = id => { const g=gastos.find(x=>x.id===id); if(!g)return; $('gId').value=id; $('gConc').value=g.concepto||''; $('gMon').value=g.monto||''; $('gCat').value=g.categoria||'materia_prima'; $('moGastoT').textContent='Editar Gasto'; $('moGasto').classList.add('show'); };
+window.editG = id => { const g=gastos.find(x=>x.id===id); if(!g)return; $('gId').value=id; $('gConc').value=g.concepto||''; $('gMon').value=g.monto||''; $('gCat').value=g.categoria||'materia_prima'; const fd=g.fecha?.toDate?.(); $('gFecha').value=fd?fd.toISOString().slice(0,10):''; $('moGastoT').textContent='Editar Gasto'; $('moGasto').classList.add('show'); };
 window.delG = async id => { if(confirm('¿Eliminar gasto?')) await deleteDoc(doc(db,'gastos',id)); };
 
 // ══════════ INVENTARIO ══════════
@@ -412,13 +420,27 @@ const chartOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend
 const pieOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom',labels:{color:'#aaa',font:{size:10},padding:12}} } };
 
 function renderDash(){
+  // Date filter
+  const desde = $('dashDesde')?.value, hasta = $('dashHasta')?.value;
+  const dDesde = desde ? new Date(desde+'T00:00:00') : null;
+  const dHasta = hasta ? new Date(hasta+'T23:59:59') : null;
+  const filtrarFecha = arr => arr.filter(r => {
+    const d = r.fecha?.toDate?.(); if(!d) return false;
+    if(dDesde && d < dDesde) return false;
+    if(dHasta && d > dHasta) return false;
+    return true;
+  });
+  const fVentas = (dDesde||dHasta) ? filtrarFecha(ventas) : ventas;
+  const fGastos = (dDesde||dHasta) ? filtrarFecha(gastos) : gastos;
+  const rangoLabel = desde||hasta ? ` (${desde||'inicio'} → ${hasta||'hoy'})` : '';
+
   // Stats
-  const tV = ventas.reduce((s,v)=>s+Number(v.monto||0),0);
-  const tG = gastos.reduce((s,v)=>s+Number(v.monto||0),0);
+  const tV = fVentas.reduce((s,v)=>s+Number(v.monto||0),0);
+  const tG = fGastos.reduce((s,v)=>s+Number(v.monto||0),0);
   const util = tV - tG;
   const pct = tV > 0 ? ((util/tV)*100).toFixed(1) : '0.0';
-  const tDom = ventas.filter(v=>v.canal==='domicilio').reduce((s,v)=>s+Number(v.monto||0),0);
-  const tSit = ventas.filter(v=>v.canal!=='domicilio').reduce((s,v)=>s+Number(v.monto||0),0);
+  const tDom = fVentas.filter(v=>v.canal==='domicilio').reduce((s,v)=>s+Number(v.monto||0),0);
+  const tSit = fVentas.filter(v=>v.canal!=='domicilio').reduce((s,v)=>s+Number(v.monto||0),0);
   $('dashStats').innerHTML = `
     <div class="sc"><div class="sl">Total Ventas</div><div class="sv green">${fmt(tV)}</div></div>
     <div class="sc"><div class="sl">Total Gastos</div><div class="sv red">${fmt(tG)}</div></div>
@@ -431,8 +453,8 @@ function renderDash(){
   const now = new Date();
   const months = [];
   for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); months.push({m:d.getMonth(),y:d.getFullYear(),label:MESES[d.getMonth()]}); }
-  const mVentas = months.map(({m,y})=>ventas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y}).reduce((s,v)=>s+Number(v.monto||0),0));
-  const mGastos = months.map(({m,y})=>gastos.filter(g=>{const d=g.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y}).reduce((s,g)=>s+Number(g.monto||0),0));
+  const mVentas = months.map(({m,y})=>fVentas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y}).reduce((s,v)=>s+Number(v.monto||0),0));
+  const mGastos = months.map(({m,y})=>fGastos.filter(g=>{const d=g.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y}).reduce((s,g)=>s+Number(g.monto||0),0));
   const mUtil = mVentas.map((v,i)=>v-mGastos[i]);
   const labels = months.map(m=>m.label);
 
@@ -444,13 +466,13 @@ function renderDash(){
   ]}, options:chartOpts });
 
   // Chart: Gastos por categoría
-  const catTotals = Object.entries(CATS).map(([k,v])=>({label:v.l,color:v.c,total:gastos.filter(g=>g.categoria===k).reduce((s,g)=>s+Number(g.monto||0),0)})).filter(c=>c.total>0);
+  const catTotals = Object.entries(CATS).map(([k,v])=>({label:v.l,color:v.c,total:fGastos.filter(g=>g.categoria===k).reduce((s,g)=>s+Number(g.monto||0),0)})).filter(c=>c.total>0);
   if(chartGastos) chartGastos.destroy();
   chartGastos = new Chart($('chartGastos'), { type:'doughnut', data:{ labels:catTotals.map(c=>c.label), datasets:[{data:catTotals.map(c=>c.total),backgroundColor:catTotals.map(c=>c.color),borderWidth:0}] }, options:pieOpts });
 
   // Chart: Canal
-  const mSitio = months.map(({m,y})=>ventas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal!=='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
-  const mDomi = months.map(({m,y})=>ventas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal==='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
+  const mSitio = months.map(({m,y})=>fVentas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal!=='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
+  const mDomi = months.map(({m,y})=>fVentas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal==='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
   if(chartCanal) chartCanal.destroy();
   chartCanal = new Chart($('chartCanal'), { type:'bar', data:{ labels, datasets:[
     {label:'En sitio',data:mSitio,backgroundColor:'rgba(217,43,43,.7)',borderRadius:4},
@@ -490,16 +512,23 @@ window.exportInv = () => {
   dlCSV(`inventario_${new Date().toISOString().slice(0,10)}.csv`,['Producto','Categoría','Stock','Unidad','Costo Unit.','Valor Total'],rows);
 };
 window.exportDashboard = () => {
-  const tV=ventas.reduce((s,v)=>s+Number(v.monto||0),0), tG=gastos.reduce((s,g)=>s+Number(g.monto||0),0);
+  const desde=$('dashDesde')?.value, hasta=$('dashHasta')?.value;
+  const dDesde=desde?new Date(desde+'T00:00:00'):null, dHasta=hasta?new Date(hasta+'T23:59:59'):null;
+  const ff = arr => arr.filter(r=>{const d=r.fecha?.toDate?.();if(!d)return false;if(dDesde&&d<dDesde)return false;if(dHasta&&d>dHasta)return false;return true;});
+  const fV=(dDesde||dHasta)?ff(ventas):ventas, fG=(dDesde||dHasta)?ff(gastos):gastos;
+  const tV=fV.reduce((s,v)=>s+Number(v.monto||0),0), tG=fG.reduce((s,g)=>s+Number(g.monto||0),0);
+  const periodo = desde||hasta ? `Período: ${desde||'inicio'} a ${hasta||'hoy'}` : 'Todos los registros';
   const rows = [
+    [periodo,''],['',''],
     ['RESUMEN GENERAL',''],['Total Ventas',tV],['Total Gastos',tG],['Utilidad',tV-tG],['% Utilidad',tV>0?((tV-tG)/tV*100).toFixed(1)+'%':'0%'],
-    ['',''],['VENTAS POR CANAL',''],['En sitio',ventas.filter(v=>v.canal!=='domicilio').reduce((s,v)=>s+Number(v.monto||0),0)],
-    ['Domicilio',ventas.filter(v=>v.canal==='domicilio').reduce((s,v)=>s+Number(v.monto||0),0)],
+    ['',''],['VENTAS POR CANAL',''],['En sitio',fV.filter(v=>v.canal!=='domicilio').reduce((s,v)=>s+Number(v.monto||0),0)],
+    ['Domicilio',fV.filter(v=>v.canal==='domicilio').reduce((s,v)=>s+Number(v.monto||0),0)],
     ['',''],['GASTOS POR CATEGORÍA',''],
-    ...Object.entries(CATS).map(([k,v])=>[v.l,gastos.filter(g=>g.categoria===k).reduce((s,g)=>s+Number(g.monto||0),0)])
+    ...Object.entries(CATS).map(([k,v])=>[v.l,fG.filter(g=>g.categoria===k).reduce((s,g)=>s+Number(g.monto||0),0)])
   ];
   dlCSV(`reporte_${new Date().toISOString().slice(0,10)}.csv`,['Concepto','Valor'],rows);
 };
+window.clearDashDates = () => { $('dashDesde').value=''; $('dashHasta').value=''; renderDash(); };
 
 // ══════════ UI ══════════
 window.go = (p,el) => {
@@ -508,8 +537,9 @@ window.go = (p,el) => {
   if(p==='dashboard') renderDash();
 };
 window.openMo = id => {
-  if(id==='moVenta'){$('vId').value='';$('vConc').value='';$('vMon').value='';$('moVentaT').textContent='Registrar Venta';}
-  if(id==='moGasto'){$('gId').value='';$('gConc').value='';$('gMon').value='';$('moGastoT').textContent='Registrar Gasto';}
+  const hoy = new Date().toISOString().slice(0,10);
+  if(id==='moVenta'){$('vId').value='';$('vConc').value='';$('vMon').value='';$('vFecha').value=hoy;$('moVentaT').textContent='Registrar Venta';}
+  if(id==='moGasto'){$('gId').value='';$('gConc').value='';$('gMon').value='';$('gFecha').value=hoy;$('moGastoT').textContent='Registrar Gasto';}
   if(id==='moInv'){$('iId').value='';$('iNom').value='';$('iStock').value='';$('iPre').value='';$('moInvT').textContent='Agregar Producto';}
   $(id).classList.add('show');
 };
