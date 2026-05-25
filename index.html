@@ -7,7 +7,6 @@
   <title>La Industria · Gestión Financiera</title>
   <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
   <style>
     :root {
       --bg:#0a0a0a; --surface:#141416; --card:#1c1c20; --border:#2a2a30;
@@ -267,6 +266,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, query, orderBy, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+import { Chart, registerables } from "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/+esm";
+Chart.register(...registerables);
 
 const app = initializeApp({
   apiKey:"AIzaSyCy2Zl8LG0CFwru2IxmwJ9KywHV9PIppGY",authDomain:"laindustria-finanzas.firebaseapp.com",
@@ -418,7 +419,6 @@ window.delI = async id => { if(confirm('¿Eliminar producto?')) await deleteDoc(
 
 // ══════════ DASHBOARD ══════════
 let chartVG, chartGastos, chartCanal, chartUtilidad;
-const ChartJS = window.Chart;
 const chartOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:'#aaa',font:{size:11}}} }, scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}},y:{ticks:{color:'#888',font:{size:10},callback:v=>fmtS(v)},grid:{color:'#222'}}} };
 const pieOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom',labels:{color:'#aaa',font:{size:10},padding:12}} } };
 
@@ -463,7 +463,7 @@ function renderDash(){
 
   // Chart: Ventas vs Gastos
   if(chartVG) chartVG.destroy();
-  chartVG = new ChartJS($('chartVG'), { type:'bar', data:{ labels, datasets:[
+  chartVG = new Chart($('chartVG'), { type:'bar', data:{ labels, datasets:[
     {label:'Ventas',data:mVentas,backgroundColor:'rgba(46,204,113,.7)',borderRadius:4},
     {label:'Gastos',data:mGastos,backgroundColor:'rgba(217,43,43,.7)',borderRadius:4}
   ]}, options:chartOpts });
@@ -471,20 +471,20 @@ function renderDash(){
   // Chart: Gastos por categoría
   const catTotals = Object.entries(CATS).map(([k,v])=>({label:v.l,color:v.c,total:fGastos.filter(g=>g.categoria===k).reduce((s,g)=>s+Number(g.monto||0),0)})).filter(c=>c.total>0);
   if(chartGastos) chartGastos.destroy();
-  chartGastos = new ChartJS($('chartGastos'), { type:'doughnut', data:{ labels:catTotals.map(c=>c.label), datasets:[{data:catTotals.map(c=>c.total),backgroundColor:catTotals.map(c=>c.color),borderWidth:0}] }, options:pieOpts });
+  chartGastos = new Chart($('chartGastos'), { type:'doughnut', data:{ labels:catTotals.map(c=>c.label), datasets:[{data:catTotals.map(c=>c.total),backgroundColor:catTotals.map(c=>c.color),borderWidth:0}] }, options:pieOpts });
 
   // Chart: Canal
   const mSitio = months.map(({m,y})=>fVentas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal!=='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
   const mDomi = months.map(({m,y})=>fVentas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal==='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
   if(chartCanal) chartCanal.destroy();
-  chartCanal = new ChartJS($('chartCanal'), { type:'bar', data:{ labels, datasets:[
+  chartCanal = new Chart($('chartCanal'), { type:'bar', data:{ labels, datasets:[
     {label:'En sitio',data:mSitio,backgroundColor:'rgba(217,43,43,.7)',borderRadius:4},
     {label:'Domicilio',data:mDomi,backgroundColor:'rgba(52,152,219,.7)',borderRadius:4}
   ]}, options:{...chartOpts,scales:{...chartOpts.scales,x:{...chartOpts.scales.x,stacked:true},y:{...chartOpts.scales.y,stacked:true}}} });
 
   // Chart: Utilidad
   if(chartUtilidad) chartUtilidad.destroy();
-  chartUtilidad = new ChartJS($('chartUtilidad'), { type:'line', data:{ labels, datasets:[
+  chartUtilidad = new Chart($('chartUtilidad'), { type:'line', data:{ labels, datasets:[
     {label:'Utilidad',data:mUtil,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#2ecc71'}
   ]}, options:chartOpts });
 }
