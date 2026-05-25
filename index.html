@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -96,10 +97,11 @@
     .empty{text-align:center;padding:40px 16px;color:var(--muted);font-size:13px}
 
     /* CHARTS */
-    .chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:20px}
+    .chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:20px}
     .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px}
     .chart-box h3{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;margin-bottom:12px;color:var(--soft)}
-    .chart-box canvas{max-height:250px}
+    .chart-wrap{position:relative;width:100%;height:250px}
+    .chart-wrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
 
     /* MODAL */
     .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:flex-end;justify-content:center}
@@ -154,10 +156,10 @@
       </div>
       <div class="stats" id="dashStats"></div>
       <div class="chart-grid">
-        <div class="chart-box"><h3>Ventas vs Gastos (Últimos 6 meses)</h3><canvas id="chartVG"></canvas></div>
-        <div class="chart-box"><h3>Distribución de Gastos</h3><canvas id="chartGastos"></canvas></div>
-        <div class="chart-box"><h3>Ventas: Sitio vs Domicilio</h3><canvas id="chartCanal"></canvas></div>
-        <div class="chart-box"><h3>Utilidad Mensual</h3><canvas id="chartUtilidad"></canvas></div>
+        <div class="chart-box"><h3>Ventas vs Gastos (Últimos 6 meses)</h3><div class="chart-wrap"><canvas id="chartVG"></canvas></div></div>
+        <div class="chart-box"><h3>Distribución de Gastos</h3><div class="chart-wrap"><canvas id="chartGastos"></canvas></div></div>
+        <div class="chart-box"><h3>Ventas: Sitio vs Domicilio</h3><div class="chart-wrap"><canvas id="chartCanal"></canvas></div></div>
+        <div class="chart-box"><h3>Utilidad Mensual</h3><div class="chart-wrap"><canvas id="chartUtilidad"></canvas></div></div>
       </div>
     </div>
 
@@ -416,6 +418,7 @@ window.delI = async id => { if(confirm('¿Eliminar producto?')) await deleteDoc(
 
 // ══════════ DASHBOARD ══════════
 let chartVG, chartGastos, chartCanal, chartUtilidad;
+const ChartJS = window.Chart;
 const chartOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:'#aaa',font:{size:11}}} }, scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}},y:{ticks:{color:'#888',font:{size:10},callback:v=>fmtS(v)},grid:{color:'#222'}}} };
 const pieOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom',labels:{color:'#aaa',font:{size:10},padding:12}} } };
 
@@ -460,7 +463,7 @@ function renderDash(){
 
   // Chart: Ventas vs Gastos
   if(chartVG) chartVG.destroy();
-  chartVG = new Chart($('chartVG'), { type:'bar', data:{ labels, datasets:[
+  chartVG = new ChartJS($('chartVG'), { type:'bar', data:{ labels, datasets:[
     {label:'Ventas',data:mVentas,backgroundColor:'rgba(46,204,113,.7)',borderRadius:4},
     {label:'Gastos',data:mGastos,backgroundColor:'rgba(217,43,43,.7)',borderRadius:4}
   ]}, options:chartOpts });
@@ -468,20 +471,20 @@ function renderDash(){
   // Chart: Gastos por categoría
   const catTotals = Object.entries(CATS).map(([k,v])=>({label:v.l,color:v.c,total:fGastos.filter(g=>g.categoria===k).reduce((s,g)=>s+Number(g.monto||0),0)})).filter(c=>c.total>0);
   if(chartGastos) chartGastos.destroy();
-  chartGastos = new Chart($('chartGastos'), { type:'doughnut', data:{ labels:catTotals.map(c=>c.label), datasets:[{data:catTotals.map(c=>c.total),backgroundColor:catTotals.map(c=>c.color),borderWidth:0}] }, options:pieOpts });
+  chartGastos = new ChartJS($('chartGastos'), { type:'doughnut', data:{ labels:catTotals.map(c=>c.label), datasets:[{data:catTotals.map(c=>c.total),backgroundColor:catTotals.map(c=>c.color),borderWidth:0}] }, options:pieOpts });
 
   // Chart: Canal
   const mSitio = months.map(({m,y})=>fVentas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal!=='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
   const mDomi = months.map(({m,y})=>fVentas.filter(v=>{const d=v.fecha?.toDate?.();return d&&d.getMonth()===m&&d.getFullYear()===y&&v.canal==='domicilio'}).reduce((s,v)=>s+Number(v.monto||0),0));
   if(chartCanal) chartCanal.destroy();
-  chartCanal = new Chart($('chartCanal'), { type:'bar', data:{ labels, datasets:[
+  chartCanal = new ChartJS($('chartCanal'), { type:'bar', data:{ labels, datasets:[
     {label:'En sitio',data:mSitio,backgroundColor:'rgba(217,43,43,.7)',borderRadius:4},
     {label:'Domicilio',data:mDomi,backgroundColor:'rgba(52,152,219,.7)',borderRadius:4}
   ]}, options:{...chartOpts,scales:{...chartOpts.scales,x:{...chartOpts.scales.x,stacked:true},y:{...chartOpts.scales.y,stacked:true}}} });
 
   // Chart: Utilidad
   if(chartUtilidad) chartUtilidad.destroy();
-  chartUtilidad = new Chart($('chartUtilidad'), { type:'line', data:{ labels, datasets:[
+  chartUtilidad = new ChartJS($('chartUtilidad'), { type:'line', data:{ labels, datasets:[
     {label:'Utilidad',data:mUtil,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#2ecc71'}
   ]}, options:chartOpts });
 }
