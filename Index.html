@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Ventas – Feria</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #fdf6ec;
+    --warm: #f5e8d0;
+    --coral: #e8613a;
+    --green: #2d6a4f;
+    --gold: #c9a84c;
+    --pink: #d96b8f;
+    --dark: #1a1209;
+    --mid: #5c4a2a;
+    --light: #fff9f2;
+    --shadow: 0 4px 24px rgba(26,18,9,0.13);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--dark);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--dark);
+    color: var(--cream);
+    padding: 18px 24px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 4px solid var(--gold);
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+  header span.sub {
+    font-size: 0.75rem;
+    color: var(--gold);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 2px;
+  }
+  .icon-hat { font-size: 2rem; }
+
+  /* Summary bar */
+  .summary {
+    display: flex;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--dark);
+    border-bottom: 2px solid #2e2013;
+    flex-wrap: wrap;
+  }
+  .stat {
+    flex: 1;
+    min-width: 90px;
+    background: #2e2013;
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .stat .val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .stat .lbl {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #b09a75;
+    margin-top: 3px;
+  }
+
+  /* Main content */
+  main { padding: 20px 16px 40px; max-width: 700px; margin: 0 auto; }
+
+  h2.section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--mid);
+    margin: 24px 0 12px;
+    border-left: 4px solid var(--coral);
+    padding-left: 10px;
+  }
+
+  /* Product cards */
+  .product-card {
+    background: var(--light);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1.5px solid #eddfc8;
+  }
+  .product-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--warm);
+    border-bottom: 1.5px solid #eddfc8;
+  }
+  .product-emoji { font-size: 2.2rem; }
+  .product-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dark);
+  }
+  .product-total {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--mid);
+    text-align: right;
+    line-height: 1.4;
+  }
+  .product-total .big {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--coral);
+    display: block;
+  }
+
+  /* Size grid */
+  .sizes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding: 14px 16px;
+    border-bottom: 1.5px solid #eddfc8;
+  }
+  .size-cell { text-align: center; padding: 6px 4px; }
+  .size-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #9e8060;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .size-stock {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1;
+  }
+  .size-stock.low { color: var(--coral); }
+  .size-stock.zero { color: #ccc; text-decoration: line-through; }
+  .size-orig {
+    font-size: 0.65rem;
+    color: #b5997a;
+    margin-top: 1px;
+  }
+  .size-btn-row {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 5px;
+  }
+  .btn-sell {
+    background: var(--coral);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.04em;
+  }
+  .btn-sell:hover { background: #c94e2a; transform: scale(1.05); }
+  .btn-sell:disabled { background: #ddd; color: #aaa; cursor: not-allowed; transform: none; }
+  .btn-undo {
+    background: transparent;
+    color: var(--mid);
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .btn-undo:hover { border-color: var(--mid); }
+  .btn-undo:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Venta modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,18,9,0.55);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--light);
+    border-radius: 18px;
+    padding: 26px 22px 22px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 16px 60px rgba(0,0,0,0.35);
+    border: 2px solid var(--gold);
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .modal h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+    color: var(--dark);
+  }
+  .modal .ctx {
+    font-size: 0.8rem;
+    color: var(--mid);
+    margin-bottom: 18px;
+  }
+  .modal label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--mid);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 5px;
+    margin-top: 14px;
+  }
+  .modal input, .modal select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1.5px solid #ddd;
+    font-size: 0.9rem;
+    font-family: 'DM Sans', sans-serif;
+    background: white;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal input:focus, .modal select:focus { border-color: var(--coral); }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .btn-confirm {
+    flex: 1;
+    background: var(--coral);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+  }
+  .btn-confirm:hover { background: #c94e2a; }
+  .btn-cancel {
+    flex: 0.5;
+    background: transparent;
+    color: var(--mid);
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .qty-input { display: flex; align-items: center; gap: 10px; }
+  .qty-input input { text-align: center; width: 70px; }
+  .qty-btn {
+    background: var(--warm);
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Log */
+  .log-entry {
+    background: white;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    border-left: 4px solid var(--green);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    font-size: 0.82rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .log-entry .log-left { line-height: 1.5; }
+  .log-entry .log-time { font-size: 0.7rem; color: #aaa; white-space: nowrap; }
+  .log-entry strong { color: var(--dark); }
+  .log-empty { color: #bbb; font-size: 0.85rem; text-align: center; padding: 20px 0; }
+
+  .btn-export {
+    display: block;
+    width: 100%;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 10px;
+    letter-spacing: 0.04em;
+    transition: background 0.15s;
+  }
+  .btn-export:hover { background: #1f4f39; }
+
+  .tag-design {
+    display: inline-block;
+    font-size: 0.65rem;
+    background: var(--gold);
+    color: var(--dark);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-right: 4px;
+  }
+  .tag-size {
+    display: inline-block;
+    font-size: 0.65rem;
+    background: var(--pink);
+    color: white;
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="icon-hat">🎪</span>
+  <div>
+    <h1>Control de Ventas</h1>
+    <span class="sub">Camisetas · Feria de Córdoba</span>
+  </div>
+</header>
+
+<div class="summary">
+  <div class="stat">
+    <div class="val" id="stat-total">80</div>
+    <div class="lbl">Inventario total</div>
+  </div>
+  <div class="stat">
+    <div class="val" id="stat-vendidas">0</div>
+    <div class="lbl">Vendidas hoy</div>
+  </div>
+  <div class="stat">
+    <div class="val" id="stat-restantes">80</div>
+    <div class="lbl">Disponibles</div>
+  </div>
+</div>
+
+<main>
+  <h2 class="section-title">📦 Stock por referencia</h2>
+  <div id="products-container"></div>
+
+  <h2 class="section-title">📋 Registro de ventas</h2>
+  <div id="log-container"><p class="log-empty">Aún no hay ventas registradas.</p></div>
+  <button class="btn-export" onclick="exportCSV()">⬇️ Exportar registro a CSV</button>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Registrar venta</h3>
+    <p class="ctx" id="modal-ctx"></p>
+
+    <label>Cantidad</label>
+    <div class="qty-input">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <input type="number" id="modal-qty" value="1" min="1">
+      <button class="qty-btn" onclick="changeQty(1)">+</button>
+    </div>
+
+    <label>Cliente (opcional)</label>
+    <input type="text" id="modal-client" placeholder="Nombre, puesto, teléfono...">
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmSale()">✔ Confirmar venta</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRODUCTS = [
+  { id: 'cordoba', emoji: '🎨', name: 'Córdoba – Wepa-je!', stock: { S:10, M:10, L:5, XL:5 } },
+  { id: 'costena', emoji: '🌴', name: 'Mini Costeñita core', stock: { S:10, M:10, L:5, XL:5 } },
+  { id: 'monteria', emoji: '🌉', name: 'Montería – La Villa Soñada', stock: { S:5, M:5, L:5, XL:5 } },
+];
+const SIZES = ['S','M','L','XL'];
+
+// State – load from localStorage
+let state = loadState();
+let salesLog = loadLog();
+let pendingAction = null; // {productId, size}
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('feriaStock');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  // Deep copy initial
+  return PRODUCTS.map(p => ({ id: p.id, stock: {...p.stock} }));
+}
+function saveState() {
+  localStorage.setItem('feriaStock', JSON.stringify(state));
+}
+function loadLog() {
+  try {
+    const l = localStorage.getItem('feriaLog');
+    if (l) return JSON.parse(l);
+  } catch(e) {}
+  return [];
+}
+function saveLog() {
+  localStorage.setItem('feriaLog', JSON.stringify(salesLog));
+}
+
+function getStock(productId, size) {
+  const s = state.find(p => p.id === productId);
+  return s ? s.stock[size] : 0;
+}
+function getOrigStock(productId, size) {
+  const p = PRODUCTS.find(pr => pr.id === productId);
+  return p ? p.stock[size] : 0;
+}
+function totalRemaining() {
+  return state.reduce((a, s) => a + SIZES.reduce((b, sz) => b + s.stock[sz], 0), 0);
+}
+function totalInventory() {
+  return PRODUCTS.reduce((a, p) => a + SIZES.reduce((b, sz) => b + p.stock[sz], 0), 0);
+}
+function totalSold() {
+  return salesLog.reduce((a, e) => a + e.qty, 0);
+}
+
+function renderAll() {
+  renderProducts();
+  renderLog();
+  renderStats();
+}
+
+function renderProducts() {
+  const container = document.getElementById('products-container');
+  container.innerHTML = '';
+  PRODUCTS.forEach(p => {
+    const st = state.find(s => s.id === p.id);
+    const remaining = SIZES.reduce((a, sz) => a + st.stock[sz], 0);
+    const orig = SIZES.reduce((a, sz) => a + p.stock[sz], 0);
+    let html = `
+      <div class="product-card">
+        <div class="product-header">
+          <span class="product-emoji">${p.emoji}</span>
+          <span class="product-name">${p.name}</span>
+          <div class="product-total">
+            <span class="big">${remaining}</span>
+            de ${orig} disponibles
+          </div>
+        </div>
+        <div class="sizes-grid">`;
+    SIZES.forEach(sz => {
+      const cur = st.stock[sz];
+      const or = p.stock[sz];
+      let cls = cur === 0 ? 'zero' : cur <= 2 ? 'low' : '';
+      html += `
+          <div class="size-cell">
+            <div class="size-label">${sz}</div>
+            <div class="size-stock ${cls}" id="stock-${p.id}-${sz}">${cur}</div>
+            <div class="size-orig">/ ${or}</div>
+            <div class="size-btn-row">
+              <button class="btn-sell" ${cur===0?'disabled':''} onclick="openModal('${p.id}','${sz}')">Vender</button>
+              <button class="btn-undo" onclick="undoLast('${p.id}','${sz}')" title="Deshacer última venta">↩</button>
+            </div>
+          </div>`;
+    });
+    html += `</div></div>`;
+    container.innerHTML += html;
+  });
+}
+
+function renderStats() {
+  const total = totalInventory();
+  const sold = totalSold();
+  const rem = totalRemaining();
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-vendidas').textContent = sold;
+  document.getElementById('stat-restantes').textContent = rem;
+}
+
+function renderLog() {
+  const container = document.getElementById('log-container');
+  if (salesLog.length === 0) {
+    container.innerHTML = '<p class="log-empty">Aún no hay ventas registradas.</p>';
+    return;
+  }
+  container.innerHTML = [...salesLog].reverse().map(e => {
+    const p = PRODUCTS.find(pr => pr.id === e.productId);
+    return `
+      <div class="log-entry">
+        <div class="log-left">
+          <span class="tag-design">${p ? p.name.split('–')[0].trim() : e.productId}</span>
+          <span class="tag-size">${e.size}</span>
+          <strong>×${e.qty}</strong>
+          ${e.client ? `· <em>${e.client}</em>` : ''}
+        </div>
+        <div class="log-time">${e.time}</div>
+      </div>`;
+  }).join('');
+}
+
+function openModal(productId, size) {
+  pendingAction = { productId, size };
+  const p = PRODUCTS.find(pr => pr.id === productId);
+  const avail = getStock(productId, size);
+  document.getElementById('modal-ctx').textContent = `${p.name} · Talla ${size} · Disponibles: ${avail}`;
+  document.getElementById('modal-qty').value = 1;
+  document.getElementById('modal-qty').max = avail;
+  document.getElementById('modal-client').value = '';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  pendingAction = null;
+}
+function changeQty(delta) {
+  const input = document.getElementById('modal-qty');
+  const val = Math.max(1, Math.min(parseInt(input.max)||99, (parseInt(input.value)||1) + delta));
+  input.value = val;
+}
+function confirmSale() {
+  if (!pendingAction) return;
+  const qty = parseInt(document.getElementById('modal-qty').value) || 1;
+  const client = document.getElementById('modal-client').value.trim();
+  const { productId, size } = pendingAction;
+  const avail = getStock(productId, size);
+  if (qty > avail) { alert(`Solo quedan ${avail} unidades en talla ${size}.`); return; }
+
+  // Update stock
+  const st = state.find(s => s.id === productId);
+  st.stock[size] -= qty;
+  saveState();
+
+  // Log
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}) + ' · ' + now.toLocaleDateString('es-CO', {day:'2-digit', month:'short'});
+  salesLog.push({ productId, size, qty, client, time: timeStr });
+  saveLog();
+
+  closeModal();
+  renderAll();
+}
+
+function undoLast(productId, size) {
+  // Find last log entry for this product+size
+  for (let i = salesLog.length - 1; i >= 0; i--) {
+    if (salesLog[i].productId === productId && salesLog[i].size === size) {
+      const entry = salesLog[i];
+      const st = state.find(s => s.id === productId);
+      const orig = getOrigStock(productId, size);
+      if (st.stock[size] + entry.qty > orig) {
+        alert('No se puede deshacer: excedería el stock original.');
+        return;
+      }
+      st.stock[size] += entry.qty;
+      salesLog.splice(i, 1);
+      saveState();
+      saveLog();
+      renderAll();
+      return;
+    }
+  }
+  alert('No hay ventas previas para deshacer en esta referencia/talla.');
+}
+
+function exportCSV() {
+  if (salesLog.length === 0) { alert('No hay ventas registradas aún.'); return; }
+  const header = 'Diseño,Talla,Cantidad,Cliente,Hora\n';
+  const rows = salesLog.map(e => {
+    const p = PRODUCTS.find(pr => pr.id === e.productId);
+    const name = p ? `"${p.name}"` : e.productId;
+    return `${name},${e.size},${e.qty},"${e.client || ''}","${e.time}"`;
+  }).join('\n');
+  const blob = new Blob(['\uFEFF' + header + rows], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = 'ventas_feria_cordoba.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+renderAll();
+</script>
+</body>
+</html>
